@@ -6,56 +6,38 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const port = 3000;
 
-// توکن و chat_id
 const token = "7573492339:AAGWg6UU45-bfTKx0Cs-fVUWYL-fSC9wXog";
 const chatId = 1196450049;
-
-// بات تلگرام
 const bot = new TelegramBot(token, { polling: true });
 
 app.use(bodyParser.json());
 app.use(express.static("public"));
 
-// لیست پیام‌ها برای ذخیره پاسخ‌ها
-const messages = {};
+let messages = {};
 
-// API برای ارسال پیام
 app.post("/api/send", (req, res) => {
   const { username, message } = req.body;
   const id = uuidv4();
   messages[id] = { username, message, reply: "" };
 
-  const text = `📩 پیام جدید ناشناس:\n\n👤 فرستنده: ${username}\n\n💬 پیام: ${message}\n\n🆔 ID: ${id}\n\nاگر میخواهید پاسخ دهید، در تلگرام ریپلای کنید.`;
-
+  const text = `📩 پیام ناشناس جدید:\n\n👤 نام: ${username}\n💬 پیام: ${message}\n\n🆔 ID: ${id}`;
   bot.sendMessage(chatId, text);
-  res.sendStatus(200);
+
+  res.status(200).json({ id });
 });
 
-// گوش دادن به ریپلای‌ها
-bot.on("message", (msg) => {
-  if (msg.reply_to_message && msg.text) {
-    const originalText = msg.reply_to_message.text;
-    const regex = /ID: (.*)/;
-    const match = originalText.match(regex);
-
-    if (match) {
-      const id = match[1].trim();
-      if (messages[id]) {
-        messages[id].reply = msg.text;
-        bot.sendMessage(chatId, `✅ پاسخ ثبت شد برای پیام ID: ${id}`);
-      }
-    }
-  }
-});
-
-// API برای دریافت پاسخ کاربر
-app.get("/api/reply/:id", (req, res) => {
-  const id = req.params.id;
+app.post("/api/reply", (req, res) => {
+  const { id, reply } = req.body;
   if (messages[id]) {
-    res.json({ reply: messages[id].reply });
+    messages[id].reply = reply;
+    res.sendStatus(200);
   } else {
-    res.status(404).json({ reply: "" });
+    res.sendStatus(404);
   }
+});
+
+app.get("/api/messages", (req, res) => {
+  res.json(messages);
 });
 
 app.listen(port, () => {

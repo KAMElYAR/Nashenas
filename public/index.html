@@ -2,69 +2,100 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8" />
-  <title>ارسال پیام ناشناس</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پیام ناشناس</title>
   <style>
     body {
-      direction: rtl;
       font-family: sans-serif;
+      direction: rtl;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      padding: 20px;
+      color: #fff;
+    }
+    .container {
       max-width: 500px;
       margin: auto;
+      background: rgba(0,0,0,0.4);
       padding: 20px;
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
-      color: white;
-      border-radius: 10px;
-      margin-top: 50px;
+      border-radius: 15px;
     }
     input, textarea, button {
       width: 100%;
-      padding: 10px;
       margin-top: 10px;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 10px;
       border: none;
-      font-size: 1em;
     }
     button {
-      background: #ffb347;
-      color: black;
+      background: #00c6ff;
+      color: white;
       cursor: pointer;
-      transition: background 0.3s;
     }
-    button:hover {
-      background: #ffcc33;
+    .message-box {
+      background: #ffffff22;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>ارسال پیام ناشناس</h2>
-  <p>نام کاربری دلخواه بنویس (می‌تواند جعلی باشد):</p>
-  <input type="text" id="username" placeholder="نام کاربری">
-  <textarea id="message" rows="5" placeholder="پیام خود را اینجا بنویسید..."></textarea>
-  <button onclick="sendMessage()">ارسال پیام</button>
+  <div class="container">
+    <h2>ارسال پیام ناشناس</h2>
+    <input id="username" placeholder="نام (اختیاری)">
+    <textarea id="message" rows="5" placeholder="پیام خود را بنویسید..."></textarea>
+    <button onclick="sendMessage()">ارسال</button>
+
+    <hr>
+    <h3>پنل مدیریت پاسخ‌ها</h3>
+    <div id="messages"></div>
+  </div>
 
   <script>
-    async function sendMessage() {
-      const username = document.getElementById("username").value;
+    function sendMessage() {
+      const username = document.getElementById("username").value || "ناشناس";
       const message = document.getElementById("message").value;
-
-      if (!username || !message) {
-        alert("لطفاً همه فیلدها را پر کنید!");
-        return;
-      }
-
-      const res = await fetch("/api/send", {
+      fetch("/api/send", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, message })
+      }).then(res => res.json()).then(data => {
+        alert("پیام ارسال شد! ID شما: " + data.id);
       });
-
-      if (res.ok) {
-        alert("پیام شما ارسال شد ✅");
-        document.getElementById("message").value = "";
-      } else {
-        alert("خطا در ارسال پیام");
-      }
     }
+
+    function loadMessages() {
+      fetch("/api/messages").then(res => res.json()).then(data => {
+        const container = document.getElementById("messages");
+        container.innerHTML = "";
+        Object.keys(data).forEach(id => {
+          const msg = data[id];
+          const div = document.createElement("div");
+          div.className = "message-box";
+          div.innerHTML = `
+            <b>نام:</b> ${msg.username}<br>
+            <b>پیام:</b> ${msg.message}<br>
+            <b>پاسخ:</b> ${msg.reply || "هنوز پاسخی ثبت نشده"}<br>
+            <textarea id="reply-${id}" placeholder="پاسخ شما"></textarea>
+            <button onclick="sendReply('${id}')">ثبت پاسخ</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function sendReply(id) {
+      const reply = document.getElementById("reply-" + id).value;
+      fetch("/api/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, reply })
+      }).then(() => {
+        loadMessages();
+      });
+    }
+
+    loadMessages();
+    setInterval(loadMessages, 5000);
   </script>
 </body>
 </html>

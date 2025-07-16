@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>ارسال پیام ناشناس</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      direction: rtl;
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      border-radius: 10px;
+      margin-top: 50px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      background: #ffb347;
+      color: black;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #ffcc33;
+    }
+  </style>
+</head>
+<body>
+  <h2>ارسال پیام ناشناس</h2>
+  <p>نام کاربری دلخواه بنویس (می‌تواند جعلی باشد):</p>
+  <input type="text" id="username" placeholder="نام کاربری">
+  <textarea id="message" rows="5" placeholder="پیام خود را اینجا بنویسید..."></textarea>
+  <button onclick="sendMessage()">ارسال پیام</button>
+
+  <script>
+    async function sendMessage() {
+      const username = document.getElementById("username").value;
+      const message = document.getElementById("message").value;
+
+      if (!username || !message) {
+        alert("لطفاً همه فیلدها را پر کنید!");
+        return;
+      }
+
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username, message })
+      });
+
+      if (res.ok) {
+        alert("پیام شما ارسال شد ✅");
+        document.getElementById("message").value = "";
+      } else {
+        alert("خطا در ارسال پیام");
+      }
+    }
+  </script>
+</body>
+</html>
